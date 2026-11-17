@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>生日驚喜</title>
+<style>
+:root{
+  --sky1:#2a1456; --sky2:#8a2a7a; --gold:#ffd166; --coral:#ff6b8b; --mint:#5eead4;
+  --card:#fffdf9; --ink:#2a1456; --muted:#6b5a85; --line:#d9cfe8;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --card:#1f1237; --ink:#fbeeff; --muted:#bfa9dc; --line:#46305f; color-scheme:dark; }
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{
+  color:#fff; overflow-x:hidden;
+  font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+  background:linear-gradient(160deg,var(--sky1),var(--sky2) 70%,#c2410c 130%) fixed;
+}
+#cv{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:5}
+main{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 20px;text-align:center;position:relative;z-index:2}
+h1{font-size:2rem;line-height:1.25;margin:0 0 10px;font-weight:800}
+p{margin:0 0 14px;line-height:1.6}
+.big{font-size:5rem;font-weight:800;color:var(--gold);line-height:1;margin:6px 0}
+.sub{color:#e9d8ff;font-size:.95rem}
+.btn{font:inherit;font-weight:700;border:0;padding:13px 26px;border-radius:999px;cursor:pointer;background:var(--gold);color:var(--sky1);margin:6px}
+.btn.ghost{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.6)}
+.btn:focus-visible,input:focus-visible{outline:3px solid var(--mint);outline-offset:2px}
+.panel{width:100%;max-width:380px;background:var(--card);color:var(--ink);border-radius:20px;padding:20px;text-align:left}
+.panel label{display:block;font-size:.85rem;color:var(--muted);margin:12px 0 4px}
+.panel input{width:100%;font:inherit;color:var(--ink);background:transparent;border:0;border-bottom:2px solid var(--line);padding:8px 2px;border-radius:0}
+.panel .btn{width:100%;margin:18px 0 0;background:var(--coral);color:#fff}
+.gift{font-size:7.5rem;line-height:1;background:none;border:0;cursor:pointer;animation:wob 1.6s ease-in-out infinite;filter:drop-shadow(0 10px 18px rgba(0,0,0,.35))}
+@keyframes wob{0%,100%{transform:rotate(0)}15%{transform:rotate(-9deg) scale(1.04)}30%{transform:rotate(8deg) scale(1.04)}45%{transform:rotate(-5deg)}60%{transform:rotate(0)}}
+.card{background:var(--card);color:var(--ink);border-radius:22px;padding:22px 20px;max-width:380px;width:100%;box-shadow:0 18px 50px rgba(0,0,0,.35);animation:pop .5s cubic-bezier(.2,1.3,.4,1)}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+.card h2{margin:0 0 4px;font-size:1.5rem;color:var(--coral)}
+.card .age{color:var(--muted);font-size:.9rem;margin-bottom:12px}
+.card .msg{font-size:1.1rem;line-height:1.75;margin:0 0 12px}
+.card .note{border-left:4px solid var(--gold);padding-left:10px;text-align:left;color:var(--muted);font-size:.95rem}
+.card .btn{background:var(--ink);color:var(--card)}
+.card .btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.balloons span{position:fixed;bottom:-60px;font-size:2.4rem;z-index:1;animation:up linear infinite;opacity:.9}
+@keyframes up{to{transform:translateY(-120vh) rotate(12deg)}}
+@media (prefers-reduced-motion: reduce){
+  .gift,.balloons span{animation:none} .balloons{display:none} .card{animation:none}
+}
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div class="balloons" id="balloons" hidden>
+  <span style="left:6%;animation-duration:11s">🎈</span>
+  <span style="left:28%;animation-duration:15s;animation-delay:-6s">🎈</span>
+  <span style="left:55%;animation-duration:12s;animation-delay:-3s">🎈</span>
+  <span style="left:78%;animation-duration:16s;animation-delay:-9s">🎈</span>
+  <span style="left:92%;animation-duration:13s;animation-delay:-1s">🎈</span>
+</div>
+
+<main>
+  <section id="v-setup" hidden>
+    <h1>先告訴我你是誰</h1>
+    <p class="sub">生日那天打開，會有一份驚喜等你。</p>
+    <form class="panel" id="f">
+      <label for="name">名字或暱稱</label>
+      <input id="name" type="text" maxlength="12" required placeholder="例如 小明">
+      <label for="bd">生日</label>
+      <input id="bd" type="date" required>
+      <label for="note">想對自己說的一句話（選填）</label>
+      <input id="note" type="text" maxlength="40" placeholder="例如 今年要多旅行">
+      <button class="btn" type="submit">儲存</button>
+    </form>
+  </section>
+
+  <section id="v-home" hidden>
+    <p class="sub" id="h-hi"></p>
+    <div id="h-days" class="big"></div>
+    <h1 id="h-txt"></h1>
+    <p class="sub">生日當天打開，有驚喜等你。</p>
+    <button class="btn" id="b-prev" type="button">預覽驚喜</button>
+    <button class="btn ghost" id="b-edit" type="button">修改資料</button>
+  </section>
+
+  <section id="v-gift" hidden>
+    <h1 id="g-title"></h1>
+    <p class="sub">點一下，拆開你的禮物</p>
+    <button class="gift" id="b-gift" type="button" aria-label="拆禮物">🎁</button>
+  </section>
+
+  <section id="v-card" hidden>
+    <div class="card">
+      <h2 id="c-title"></h2>
+      <div class="age" id="c-age"></div>
+      <p class="msg" id="c-msg"></p>
+      <p class="note" id="c-note" hidden></p>
+      <button class="btn" id="b-again" type="button">再抽一則祝福</button>
+      <button class="btn ghost" id="b-confetti" type="button">再撒一次花</button>
+      <button class="btn ghost" id="b-close" type="button">收起</button>
+    </div>
+  </section>
+</main>
+
+<script>
+(function(){
+  var KEY = "birthday-v1";
+  var BLESS = [
+    "{n}，願你今天笑得比蛋糕還甜，新的一歲，每天都有小確幸。",
+    "生日快樂，{n}！新的一年，健康平安，想做的事都順利開花。",
+    "謝謝你這一年的努力。今天什麼都不用煩惱，好好被祝福。",
+    "{n}，願你歲歲有今朝，年年有今日，身邊永遠有愛你的人。",
+    "今天是你的主場！許個願吧，這一年會一一實現。",
+    "又長大一歲，也更棒了一點。{n}，生日快樂！",
+    "願煩惱像蠟燭一樣一吹就熄，願好運像煙火一樣一直放。",
+    "{n}，你的存在本身就是禮物。生日快樂！",
+    "新的一歲，願你睡得好、吃得香、錢包飽飽、心情滿滿。",
+    "不管今天多忙，都要記得為自己停下來一下，說聲：生日快樂。"
+  ];
+  var prof = null, last = -1;
+  function $(id){ return document.getElementById(id); }
+  function load(){ try { var p = JSON.parse(localStorage.getItem(KEY) || "null"); if (p && p.name && p.m) prof = p; } catch (e) {} }
+  function save(){ try { localStorage.setItem(KEY, JSON.stringify(prof)); } catch (e) {} }
+  function leap(y){ return (y%4===0 && y%100!==0) || y%400===0; }
+  function bday(y){ var d = prof.d; if (prof.m===2 && d===29 && !leap(y)) d = 28; return new Date(y, prof.m-1, d); }
+  function today0(){ var n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); }
+  function until(){ var t0 = today0(), t = bday(t0.getFullYear()); if (t < t0) t = bday(t0.getFullYear()+1);
+    return {days: Math.round((t - t0) / 864e5), year: t.getFullYear()}; }
+
+  function show(id){
+    ["v-setup","v-home","v-gift","v-card"].forEach(function(v){ $(v).hidden = (v !== id); });
+    $("balloons").hidden = !(id === "v-gift" || id === "v-card");
+  }
+
+  function home(skip){
+    var u = until();
+    $("h-hi").textContent = "嗨，" + prof.name;
+    if (u.days === 0){
+      if (!skip){ gift(false); return; }
+      $("h-days").textContent = "🎂";
+      $("h-txt").textContent = "今天是你的生日";
+    } else {
+      $("h-days").textContent = u.days;
+      $("h-txt").textContent = "天後是你的生日";
+    }
+    show("v-home");
+  }
+
+  function gift(preview){
+    $("g-title").textContent = preview ? "預覽：" + prof.name + "，生日快樂！" : prof.name + "，生日快樂！";
+    show("v-gift");
+    setTimeout(function(){ burst(70); }, 300);
+  }
+
+  function pick(){
+    var i; do { i = Math.floor(Math.random() * BLESS.length); } while (i === last && BLESS.length > 1);
+    last = i; $("c-msg").textContent = BLESS[i].replace(/\{n\}/g, prof.name);
+  }
+
+  function openCard(){
+    var u = until();
+    $("c-title").textContent = "🎂 " + prof.name + "，生日快樂！";
+    $("c-age").textContent = prof.y ? "你 " + (u.year - prof.y) + " 歲了" : "";
+    pick();
+    if (prof.note){ $("c-note").textContent = "你對自己說：" + prof.note; $("c-note").hidden = false; }
+    else $("c-note").hidden = true;
+    show("v-card");
+    try { navigator.vibrate && navigator.vibrate([80,40,80]); } catch (e) {}
+    burst(140); rain(2200);
+  }
+
+  /* confetti */
+  var cv = $("cv"), cx = cv.getContext("2d"), parts = [], raf = 0, W = 0, H = 0;
+  var COLORS = ["#ffd166","#ff6b8b","#5eead4","#ffffff","#a78bfa","#fb923c"];
+  var calm = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function size(){ W = cv.width = innerWidth; H = cv.height = innerHeight; }
+  addEventListener("resize", size); size();
+  function add(x, y, vx, vy){
+    parts.push({x:x,y:y,vx:vx,vy:vy,r:4+Math.random()*6,c:COLORS[Math.floor(Math.random()*COLORS.length)],a:Math.random()*6,va:(Math.random()-.5)*.4});
+  }
+  function burst(n){
+    if (calm) n = Math.round(n/4);
+    for (var i = 0; i < n; i++) add(W/2, H*0.5, (Math.random()-.5)*16, -Math.random()*17-4);
+    if (!raf) raf = requestAnimationFrame(loop);
+  }
+  function rain(ms){
+    if (calm) return;
+    var end = Date.now() + ms, t = setInterval(function(){
+      for (var i = 0; i < 4; i++) add(Math.random()*W, -10, (Math.random()-.5)*2, 2+Math.random()*3);
+      if (!raf) raf = requestAnimationFrame(loop);
+      if (Date.now() > end) clearInterval(t);
+    }, 90);
+  }
+  function loop(){
+    cx.clearRect(0, 0, W, H);
+    parts = parts.filter(function(p){ return p.y < H + 20; });
+    parts.forEach(function(p){
+      p.vy += .3; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.a += p.va;
+      cx.save(); cx.translate(p.x, p.y); cx.rotate(p.a); cx.fillStyle = p.c;
+      cx.fillRect(-p.r/2, -p.r/3, p.r, p.r*0.6); cx.restore();
+    });
+    raf = parts.length ? requestAnimationFrame(loop) : 0;
+  }
+
+  /* events */
+  $("f").addEventListener("submit", function(e){
+    e.preventDefault();
+    var v = $("bd").value.split("-");
+    if (v.length !== 3) return;
+    prof = {name: $("name").value.trim(), y: +v[0], m: +v[1], d: +v[2], note: $("note").value.trim()};
+    if (!prof.name) return;
+    save(); home();
+  });
+  $("b-prev").addEventListener("click", function(){ gift(true); });
+  $("b-edit").addEventListener("click", function(){
+    $("name").value = prof.name;
+    $("bd").value = prof.y + "-" + ("0"+prof.m).slice(-2) + "-" + ("0"+prof.d).slice(-2);
+    $("note").value = prof.note || "";
+    show("v-setup");
+  });
+  $("b-gift").addEventListener("click", openCard);
+  $("b-again").addEventListener("click", function(){ pick(); burst(60); });
+  $("b-confetti").addEventListener("click", function(){ burst(160); rain(1500); });
+  $("b-close").addEventListener("click", function(){ home(true); });
+
+  load();
+  if (prof) home(); else show("v-setup");
+})();
+</script>
+</body>
+</html>
